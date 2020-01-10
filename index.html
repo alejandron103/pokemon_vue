@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <!-- development version, includes helpful console warnings -->
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+</head>
+<body>
+
+    <div id="app">
+        <h1>
+            {{ title }}
+        </h1>
+        <search-pokemon v-model="search_pokemon"></search-pokemon>
+        <ul v-show="!show_detail_pokemon">
+            <list
+                v-for="pokemon in pokemons" 
+                :info="pokemon" 
+                :key="pokemon.id"
+                @call-pokemon="callPokemon(pokemon.url, pokemon.name)"
+                :search_pokemon="search_pokemon"
+                v-if="pokemon.name.includes(search_pokemon)"
+                > 
+            </list>
+        </ul>
+        <div class="container-pokemon" v-show="show_detail_pokemon">
+            <div class="pokemon">
+                <img :src="pokemon_detail.img">
+                <h2>Abilities</h2>
+                <ul>
+                    <li v-for="ability in pokemon_detail.abilities">{{ ability.ability.name }}</li>
+                </ul>
+            </div>
+            <button @click="toggleShow">Back</button>
+        </div>
+    </div>
+    
+    <script>
+        Vue.component('search-pokemon', {
+            props: ['value'],
+            template: `
+                <input
+                    v-bind:value="value"
+                    v-on:input="$emit('input', $event.target.value)"
+                >
+            `
+        })
+
+        Vue.component('list', {
+            props: ['info'],
+            template: `
+                <li
+                    @click="$emit('call-pokemon')"
+                >
+                    {{ info.name }}
+                </li>`
+        })
+
+        var app = new Vue({
+            el: '#app',
+            data: {
+                title : 'Pokemons',
+                pokemons : [],
+                pokemon_detail : {},
+                show_detail_pokemon: false,
+                search_pokemon: ''
+            },
+            async created() {
+                let data = await fetch('https://pokeapi.co/api/v2/pokemon/')
+                let response = await data.json()
+                this.pokemons = response.results
+            },
+            methods: {
+                callPokemon: async function(url, name){
+                    let pokemon_petition = await fetch(url)
+                    let pokemon_info = await pokemon_petition.json()
+                    this.show_detail_pokemon = true
+                    this.title = name
+                    this.pokemon_detail = {
+                        "img" : pokemon_info.sprites.front_default,
+                        "abilities" : pokemon_info.abilities
+                    }
+                },
+                toggleShow:  function(){
+                    this.show_detail_pokemon = true ? false : true
+                    this.title = "Pokemons"
+                }
+            }
+        })
+
+    </script>
+    
+</body>
+</html>
